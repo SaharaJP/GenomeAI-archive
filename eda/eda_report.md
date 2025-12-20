@@ -31,28 +31,28 @@
 
 ## 3) Визуализации и выводы
 ### 3.1 Пропуски
-[Ссылка](figs/missingness_raw.png)
+[Ссылка](eda/figs/missingness_raw.png)
 
 **Вывод:** показатели качества молока (`fat/protein/SCC`) часто неполные → их нельзя делать обязательными для P0.
 
 ### 3.2 Распределение целевой переменной
-[Ссылка](figs/milk_hist_clean.png)
+[Ссылка](eda/figs/milk_hist_clean.png)
 
 **Вывод:** распределение не нормальное, есть хвосты → предпочтительны робастные метрики (MAE/Huber) и/или
 модели, устойчивые к выбросам.
 
 ### 3.3 Различия по номеру лактации
-[Ссылка](figs/milk_box_by_parity.png)
+[Ссылка](eda/figs/milk_box_by_parity.png)
 
 **Вывод:** `parity` — сильный драйвер продуктивности → в бейзлайне обязателен как минимум «среднее по parity/ферме».
 
 ### 3.4 Тренд по времени
-[Ссылка](figs/milk_monthly_mean.png)
+[Ссылка](eda/figs/milk_monthly_mean.png)
 
 **Вывод:** есть сезонность/дрейф → валидация должна быть **time-based** (train на прошлом, test на будущем).
 
 ### 3.5 Выбросы по parity
-[Ссылка](figs/milk_outlier_rate_by_parity.png)
+[Ссылка](eda/figs/milk_outlier_rate_by_parity.png)
 
 **Вывод:** выбросы присутствуют во всех группах → нужен единый протокол обработки (winsorization/robust loss)
 и мониторинг доли выбросов в новых выгрузках.
@@ -71,6 +71,6 @@
 ---
 
 **Артефакты:**
-- Ноутбук: `notebooks/eda_demo_p0.ipynb`
-- Данные (демо): `data/raw/demo_lactations_p0.csv`
-- Картинки: `reports/eda/figs/*.png`
+- Ноутбук: `eda/eda.ipynb`
+- Данные (демо): `data/demo_lactations_p0.csv`
+- Картинки: `eda/figs/*.png`
