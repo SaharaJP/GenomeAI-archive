@@ -117,30 +117,7 @@
 ---
 
 #### 2.2. Блок-схема решения
-```mermaid
-flowchart TD
-  A[Выгрузка клиента: lactations P0 (XLSX/CSV)] --> B[Raw Snapshot + метаданные]
-  B --> C[Canonical: нормализация полей и единиц]
-  C --> D[QC: схемы/ID/даты/аномалии/достаточность групп]
-  D --> E[QC Report + QC Flags]
-  D --> F[Feature Build (P0/P1)]
-  F --> G[ML Train/Eval (time split)]
-  G --> H[Model Artifact + Metrics (MAE/RMSE/Spearman)]
-  H --> I[Scoring: pred/residual/index + confidence]
-  I --> J[Scoring Table (XLSX/CSV)]
-  E --> K[Fact Pack (Verified Facts JSON)]
-  H --> K
-  I --> K
-  K --> L[LLM: генерация текста по шаблону]
-  L --> M[Executive Report (PDF/DOCX)]
-  L --> N[Full Report (PDF/DOCX + приложения)]
-  M --> O[Ревью специалистом + фиксация решений]
-  N --> O
-  O --> P[Audit/Registry: run_id + версии + хэши]
-  J --> P
-  E --> P
-  K --> P
-```
+Добавлена в формате картинки
 
 **Архитектура бейзлайна** (для сравнения на пилоте):  
 QC → расчет z-score внутри contemporary group → отчет (без ML прогнозной модели, но с теми же артефактами QC и отчёта).  
