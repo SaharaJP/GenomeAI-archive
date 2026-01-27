@@ -302,3 +302,99 @@ Anti‑leakage:
 - Модель на time-holdout не хуже baseline.
 - Топ‑K списки проходят экспертную валидацию.
 - Готовность к внедрению/расширению.
+
+---
+
+## Внедрение
+
+### Архитектура технического решения
+
+```mermaid
+flowchart LR
+    subgraph Data[Данные]
+        S1[(Файлы CSV/XLSX)]
+        S2[(DWH / API источники - опционально)]
+    end
+
+    subgraph Offline[Офлайн контур]
+        QC[QC + валидация схемы]
+        FE[Feature engineering]
+        TR[Training pipeline]
+        AR[(Артефакты моделей\nmodels/*.joblib + baseline.json)]
+        REP[(Отчёты\nreports/*)]
+    end
+
+    subgraph Online[Онлайн контур]
+        API[FastAPI Inference Service\n/health /predict]
+        MON[Логи/метрики (Prometheus/Grafana) - target]
+    end
+
+    USER[Пользователь/клиент\n(UI/скрипт)]
+
+    S1 --> QC --> FE --> TR --> AR
+    TR --> REP
+    AR --> API
+    USER --> API
+    API --> MON
+    S2 -.-> QC
+```
+
+**Компоненты и назначение:**
+- **Training pipeline**: обучение бейзлайна и основной модели, time-based split, расчёт метрик, сохранение артефактов.
+- **Model artifacts**: `models/main_model.joblib`, `models/baseline.json` — версионируемые артефакты для развёртывания.
+- **Inference API (FastAPI)**: выдаёт предикты по ручке `/predict`, healthcheck `/health`.
+- **Reports**: метрики качества и результаты нагрузочного теста.
+
+### Инфраструктура (минимальная и целевая)
+
+**Минимальная (для ДЗ / демо):**
+- 1 VM/сервер, Python 3.11
+- запуск сервиса командой `python scripts/serve_inference.py`
+- хранение артефактов моделей на диске (`models/`)
+
+**Целевая (production):**
+- контейнеризация (Docker) + оркестратор (Kubernetes)
+- модельные артефакты в Model Registry / объектном хранилище (S3‑совместимое)
+- наблюдаемость: метрики (Prometheus), логи (ELK/OTel), алёрты
+- CI/CD для сборки и деплоя
+
+### Требования к быстродействию, надёжности и масштабирование
+
+**SLO (ориентиры):**
+- `/health`: p95 < 50 мс
+- `/predict` (батч 8 записей): p95 < 1.5 c (на 1 CPU)
+- Доступность сервиса: 99.5%+ (production)
+
+**Надёжность:**
+- healthcheck + readiness/liveness probes
+- ретраи на стороне клиента при 5xx
+- деградация: при отсутствии основной модели — возможность отвечать бейзлайном (target)
+
+**Масштабирование:**
+- горизонтальное: несколько реплик API за балансировщиком (stateless)
+- вертикальное: увеличение CPU/RAM для ускорения препроцессинга и инференса
+- батчирование запросов (batch predict) и/или очередь (Kafka/RabbitMQ) для асинхронного скоринга
+
+### Нагрузочное тестирование
+
+Тест выполнен скриптом: `scripts/load_test_inference.py` (локально, FastAPI + uvicorn, батч=8 записей на запрос).
+
+Параметры:
+- requests: **200**
+- concurrency: **20**
+- errors: **0**
+- throughput: **39.21 req/s**
+- wall time: **5.101 s**
+
+Latency (ms):
+- mean: **466.2**
+- p50: **417.5**
+- p90: **866.5**
+- p95: **1014.8**
+- p99: **1397.8**
+- max: **1980.6**
+
+График суммарных задержек:
+![](../reports/inference_load/figs/latency_summary.png)
+
+**Вывод:** в текущей демо-конфигурации (Python-only, без оптимизаций) сервис выдерживает ~39 req/s при concurrency=20 и батче=8. Для production рекомендуется контейнеризация, горизонтальное масштабирование и оптимизация инференса (батчирование, более лёгкая модель, кэширование).
